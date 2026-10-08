@@ -1,16 +1,29 @@
+// App.js
 import { NavigationContainer } from "@react-navigation/native";
-import { PaperProvider } from "react-native-paper";
+import { useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import AppRoutes from "./routes/AppRoutes"; // <-- Mudança aqui
+import { TransacoesProvider } from "./context/TransacoesContext";
+import { TabRoutes } from "./routes/TabRoutes";
+import { BoasVindasScreen } from "./screens/BoasVindasScreen";
 
 export default function App() {
+  const [primeiroAcesso, setPrimeiroAcesso] = useState(true);
+
+  if (primeiroAcesso) {
+    return (
+      <SafeAreaProvider>
+        <BoasVindasScreen onConcluir={() => setPrimeiroAcesso(false)} />
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
-      <PaperProvider>
+      <TransacoesProvider>
         <NavigationContainer>
-          <AppRoutes /> {/* <-- Mudança aqui */}
+          <TabRoutes />
         </NavigationContainer>
-      </PaperProvider>
+      </TransacoesProvider>
     </SafeAreaProvider>
   );
 }

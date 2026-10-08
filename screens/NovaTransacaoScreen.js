@@ -1,167 +1,218 @@
+// screens/NovaTransacaoScreen.js
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { Button, TextInput } from "react-native-paper";
+import { useTransacoes } from "../context/TransacoesContext";
 import { cores, espacamento, raio } from "../theme";
 
-export default function NovaTransacaoScreen({ navigation }) {
+const CATEGORIAS = [
+  { id: "alimentacao", label: "Alimentação", icone: "restaurant" },
+  { id: "transporte", label: "Transporte", icone: "car" },
+  { id: "saude", label: "Saúde", icone: "medical" },
+  { id: "lazer", label: "Lazer", icone: "game-controller" },
+  { id: "moradia", label: "Moradia", icone: "home" },
+  { id: "salario", label: "Salário", icone: "cash" },
+  { id: "outros", label: "Outros", icone: "ellipsis-horizontal-circle" },
+];
+
+export function NovaTransacaoScreen({ navigation }) {
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
-  const [tipo, setTipo] = useState("despesa"); // O padrão será despesa
+  const [tipo, setTipo] = useState("despesa");
+  const [categoria, setCategoria] = useState("outros");
 
-  const handleSalvar = () => {
-    // 1. Validação simples
-    if (!descricao || !valor) {
-      Alert.alert("Atenção", "Por favor, preencha todos os campos.");
+  const { adicionarTransacao } = useTransacoes();
+
+  const salvar = async () => {
+    if (!descricao.trim()) {
+      Alert.alert("Atenção", "Digite uma descrição.");
       return;
     }
 
-    // 2. Criação do objeto da nova transação
-    const novaTransacao = {
-      id: Math.random().toString(), // Gera um ID único provisório
-      descricao: descricao,
-      valor: parseFloat(valor.replace(",", ".")), // Garante que o valor é lido como número
-      tipo: tipo,
-      data: new Date().toLocaleDateString("pt-BR"), // Pega a data de hoje
-    };
+    const valorNumerico = parseFloat(valor.replace(",", "."));
+    if (!valor || isNaN(valorNumerico) || valorNumerico <= 0) {
+      Alert.alert("Atenção", "Digite um valor válido.");
+      return;
+    }
 
-    // 3. Navegação de volta enviando o objeto para o Dashboard
-    navigation.navigate("Dashboard", { novaTransacao: novaTransacao });
+    await adicionarTransacao({
+      id: Date.now().toString(),
+      descricao: descricao.trim(),
+      valor: valorNumerico,
+      tipo,
+      categoria,
+      data: new Date().toLocaleDateString("pt-BR"),
+    });
 
-    // 4. Limpeza do formulário para o próximo uso
     setDescricao("");
     setValor("");
     setTipo("despesa");
+    setCategoria("outros");
+    navigation.navigate("Dashboard");
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.cabecalho}>
-        <Text style={styles.titulo}>Nova Transação</Text>
-      </View>
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+      <Text style={styles.tituloPagina}>Nova Transação</Text>
 
-      <View style={styles.formulario}>
-        <TextInput
-          label="Descrição (ex: Supermercado)"
-          value={descricao}
-          onChangeText={setDescricao}
-          mode="outlined"
-          outlineColor={cores.subtexto}
-          activeOutlineColor={cores.primaria}
-          style={styles.input}
-        />
-
-        <TextInput
-          label="Valor (R$)"
-          value={valor}
-          onChangeText={setValor}
-          keyboardType="decimal-pad"
-          mode="outlined"
-          outlineColor={cores.subtexto}
-          activeOutlineColor={cores.primaria}
-          style={styles.input}
-        />
-
-        <Text style={styles.labelTipo}>Tipo de Transação</Text>
-        <View style={styles.seletorTipo}>
+      <Text style={styles.label}>Tipo</Text>
+      <View style={styles.seletor}>
+        {["receita", "despesa"].map((t) => (
           <TouchableOpacity
+            key={t}
             style={[
               styles.botaoTipo,
-              tipo === "receita" && styles.botaoReceitaAtivo,
+              tipo === t && {
+                backgroundColor:
+                  t === "receita" ? cores.receita : cores.despesa,
+              },
             ]}
-            onPress={() => setTipo("receita")}
+            onPress={() => setTipo(t)}
           >
-            <Text
-              style={[
-                styles.textoTipo,
-                tipo === "receita" && styles.textoTipoAtivo,
-              ]}
-            >
-              Receita
+            <Ionicons
+              name={t === "receita" ? "arrow-up" : "arrow-down"}
+              size={18}
+              color={tipo === t ? "#fff" : "#555"}
+            />
+            <Text style={[styles.textoTipo, tipo === t && { color: "#fff" }]}>
+              {t === "receita" ? "Receita" : "Despesa"}
             </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.botaoTipo,
-              tipo === "despesa" && styles.botaoDespesaAtivo,
-            ]}
-            onPress={() => setTipo("despesa")}
-          >
-            <Text
-              style={[
-                styles.textoTipo,
-                tipo === "despesa" && styles.textoTipoAtivo,
-              ]}
-            >
-              Despesa
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Button
-          mode="contained"
-          onPress={handleSalvar}
-          style={styles.botaoSalvar}
-          buttonColor={cores.primaria}
-        >
-          Guardar Transação
-        </Button>
+        ))}
       </View>
-    </KeyboardAvoidingView>
+
+      <Text style={styles.label}>Descrição</Text>
+      <TextInput
+        style={styles.input}
+        value={descricao}
+        onChangeText={setDescricao}
+        placeholder="Ex: Supermercado, Salário..."
+        maxLength={50}
+      />
+
+      <Text style={styles.label}>Valor (R$)</Text>
+      <TextInput
+        style={styles.input}
+        value={valor}
+        onChangeText={setValor}
+        placeholder="0,00"
+        keyboardType="decimal-pad"
+      />
+
+      <Text style={styles.label}>Categoria</Text>
+      <View style={styles.categorias}>
+        {CATEGORIAS.map((cat) => (
+          <TouchableOpacity
+            key={cat.id}
+            style={[
+              styles.chipCategoria,
+              categoria === cat.id && styles.chipAtivo,
+            ]}
+            onPress={() => setCategoria(cat.id)}
+          >
+            <Ionicons
+              name={cat.icone}
+              size={16}
+              color={categoria === cat.id ? "#fff" : cores.subtexto}
+            />
+            <Text
+              style={[
+                styles.textoChip,
+                categoria === cat.id && { color: "#fff" },
+              ]}
+            >
+              {cat.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <TouchableOpacity
+        style={styles.botaoSalvar}
+        onPress={salvar}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="checkmark" size={22} color="#fff" />
+        <Text style={styles.textoBotao}>Salvar Transação</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cores.fundo },
-  cabecalho: {
-    backgroundColor: cores.primaria,
-    paddingHorizontal: espacamento.md,
-    paddingTop: espacamento.xl,
-    paddingBottom: espacamento.lg,
-  },
-  titulo: { color: "#fff", fontSize: 22, fontWeight: "bold" },
-  formulario: { padding: espacamento.md },
-  input: { backgroundColor: "#fff", marginBottom: espacamento.md },
-  labelTipo: {
-    fontSize: 16,
-    fontWeight: "600",
+  container: { flex: 1, backgroundColor: cores.fundo, padding: espacamento.md },
+  tituloPagina: {
+    fontSize: 22,
+    fontWeight: "bold",
     color: cores.texto,
-    marginBottom: espacamento.sm,
-    marginTop: espacamento.sm,
+    marginTop: espacamento.lg,
+    marginBottom: espacamento.lg,
   },
-  seletorTipo: {
-    flexDirection: "row",
-    gap: espacamento.md,
-    marginBottom: espacamento.xl,
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#555",
+    marginBottom: espacamento.xs,
   },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: raio.sm,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: espacamento.md,
+    backgroundColor: "#fff",
+  },
+  seletor: { flexDirection: "row", gap: 12, marginBottom: espacamento.md },
   botaoTipo: {
     flex: 1,
-    paddingVertical: espacamento.md,
-    borderRadius: raio.md,
-    borderWidth: 1,
-    borderColor: cores.subtexto,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    padding: 12,
+    borderRadius: raio.sm,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    backgroundColor: "#fff",
   },
-  botaoReceitaAtivo: {
-    backgroundColor: cores.receita,
-    borderColor: cores.receita,
+  textoTipo: { fontSize: 15, fontWeight: "600", color: "#555" },
+  categorias: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: espacamento.lg,
   },
-  botaoDespesaAtivo: {
-    backgroundColor: cores.despesa,
-    borderColor: cores.despesa,
+  chipCategoria: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: raio.pill,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    backgroundColor: "#fff",
   },
-  textoTipo: { fontSize: 16, fontWeight: "bold", color: cores.subtexto },
-  textoTipoAtivo: { color: "#fff" },
-  botaoSalvar: { paddingVertical: 6, borderRadius: raio.md },
+  chipAtivo: { backgroundColor: cores.primaria, borderColor: cores.primaria },
+  textoChip: { fontSize: 13, color: cores.subtexto },
+  botaoSalvar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: cores.primaria,
+    padding: 16,
+    borderRadius: raio.md,
+    marginBottom: espacamento.xl,
+  },
+  textoBotao: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });
