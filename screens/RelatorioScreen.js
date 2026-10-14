@@ -1,11 +1,12 @@
 // screens/RelatorioScreen.js
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTransacoes } from "../context/TransacoesContext";
+import { useTransacoes } from "../context/TransacoesContext"; // ← NOVO
 import { cores, espacamento, raio } from "../theme";
 
 export function RelatorioScreen() {
-  const { receitas, despesas, saldo } = useTransacoes();
+  const { receitas, despesas, saldo, transacoes } = useTransacoes(); // ← NOVO
+
   const total = receitas + despesas || 1;
 
   return (
@@ -17,13 +18,19 @@ export function RelatorioScreen() {
           <View
             style={[
               styles.segmento,
-              { flex: receitas / total, backgroundColor: cores.receita },
+              {
+                flex: receitas / total,
+                backgroundColor: cores.receita,
+              },
             ]}
           />
           <View
             style={[
               styles.segmento,
-              { flex: despesas / total, backgroundColor: cores.despesa },
+              {
+                flex: despesas / total,
+                backgroundColor: cores.despesa,
+              },
             ]}
           />
         </View>

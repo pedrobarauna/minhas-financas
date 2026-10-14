@@ -13,12 +13,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CardsResumo } from "../components/CardsResumo";
+import { CartaoCotacoes } from "../components/CartaoCotacoes"; // ← NOVO
 import { CartaoSaldo } from "../components/CartaoSaldo";
 import { ItemTransacao } from "../components/ItemTransacao";
 import { useTransacoes } from "../context/TransacoesContext";
 import { cores, espacamento } from "../theme";
 
-export function DashboardScreen({ navigation }) {
+export function DashboardScreen({ navigation, route }) {
   const {
     transacoes,
     saldo,
@@ -28,6 +29,7 @@ export function DashboardScreen({ navigation }) {
     removerTransacao,
   } = useTransacoes();
 
+  // Mantém o status bar claro enquanto o Dashboard está em foco (cabeçalho azul) — vindo da Aula 4
   useFocusEffect(
     React.useCallback(() => {
       setStatusBarStyle("light");
@@ -46,6 +48,7 @@ export function DashboardScreen({ navigation }) {
     ]);
   }
 
+  // Tela de carregamento
   if (carregando) {
     return (
       <View style={styles.centralizador}>
@@ -55,6 +58,7 @@ export function DashboardScreen({ navigation }) {
     );
   }
 
+  // Renderiza o Dashboard: cabeçalho, cartão de saldo, resumo, cotações do dia e lista de transações
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -72,7 +76,10 @@ export function DashboardScreen({ navigation }) {
           saldo={saldo}
           mes={new Date().toLocaleDateString("pt-BR", { month: "long" })}
         />
+
         <CardsResumo receitas={receitas} despesas={despesas} />
+
+        <CartaoCotacoes />
 
         <View style={styles.secao}>
           <Text style={styles.tituloSecao}>Transações Recentes</Text>
@@ -94,6 +101,7 @@ export function DashboardScreen({ navigation }) {
                 tipo={t.tipo}
                 categoria={t.categoria}
                 data={t.data}
+                // Navega para o detalhe (DetalheTransacaoScreen criada na Aula 4)
                 onPress={() =>
                   navigation.navigate("DetalheTransacao", { transacao: t })
                 }

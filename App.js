@@ -7,6 +7,7 @@ import { TabRoutes } from "./routes/TabRoutes";
 import { BoasVindasScreen } from "./screens/BoasVindasScreen";
 
 export default function App() {
+  // Mantém a navegação condicional da Aula 4 (tela de boas-vindas no primeiro acesso)
   const [primeiroAcesso, setPrimeiroAcesso] = useState(true);
 
   if (primeiroAcesso) {

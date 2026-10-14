@@ -1,75 +1,74 @@
+// components/ItemTransacao.js
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef } from "react";
-import {
-  Animated,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { cores, espacamento, raio } from "../theme";
+
+// Mapeamento de categoria para ícone Ionicons
+const ICONES = {
+  alimentacao: "restaurant",
+  transporte: "car",
+  saude: "medical",
+  lazer: "game-controller",
+  salario: "cash",
+  moradia: "home",
+  educacao: "school",
+  outros: "ellipsis-horizontal-circle",
+};
 
 export function ItemTransacao({
   descricao,
   valor,
+  categoria,
   tipo,
   data,
   onPress,
-  index = 0,
+  onLongPress,
 }) {
+  // ← NOVO: prop onLongPress
   const isReceita = tipo === "receita";
+  const nomeIcone = ICONES[categoria] ?? "ellipsis-horizontal-circle";
 
-  // Valores iniciais da animação: opacidade 0 e 20px abaixo da posição final
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 400,
-        delay: index * 100, // Multiplicador para o efeito cascata
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 400,
-        delay: index * 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
+  // Renderiza o item da lista: ícone da categoria, descrição/data e valor formatado
   return (
-    <Animated.View
-      style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      onLongPress={onLongPress} // ← NOVO: dispara a exclusão (toque longo)
+      activeOpacity={0.7}
     >
-      <TouchableOpacity
-        style={styles.container}
-        onPress={onPress}
-        activeOpacity={0.7}
+      <View
+        style={[
+          styles.iconeContainer,
+          {
+            backgroundColor: isReceita
+              ? cores.receitaFundo
+              : cores.despesaFundo,
+          },
+        ]}
       >
-        <View style={styles.iconeBg}>
-          <Ionicons
-            name={isReceita ? "trending-up" : "trending-down"}
-            size={20}
-            color={isReceita ? cores.receita : cores.despesa}
-          />
-        </View>
-        <View style={styles.detalhes}>
-          <Text style={styles.descricao}>{descricao}</Text>
-          <Text style={styles.data}>{data}</Text>
-        </View>
-        <Text
-          style={[
-            styles.valor,
-            { color: isReceita ? cores.receita : cores.texto },
-          ]}
-        >
-          {isReceita ? "+" : "-"} R$ {valor.toFixed(2)}
+        <Ionicons
+          name={nomeIcone}
+          size={22}
+          color={isReceita ? cores.receita : cores.despesa}
+        />
+      </View>
+
+      <View style={styles.info}>
+        <Text style={styles.descricao} numberOfLines={1}>
+          {descricao}
         </Text>
-      </TouchableOpacity>
-    </Animated.View>
+        <Text style={styles.data}>{data}</Text>
+      </View>
+
+      <Text
+        style={[
+          styles.valor,
+          { color: isReceita ? cores.receita : cores.despesa },
+        ]}
+      >
+        {isReceita ? "+" : "-"} R$ {valor.toFixed(2)}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -78,21 +77,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: cores.cartao,
-    padding: espacamento.md,
     borderRadius: raio.md,
+    padding: espacamento.md,
     marginBottom: espacamento.sm,
+    // Sombra (iOS):
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    // Sombra (Android):
+    elevation: 2,
   },
-  iconeBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: cores.fundo,
+  iconeContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22, // círculo perfeito (metade do width/height)
     justifyContent: "center",
     alignItems: "center",
     marginRight: espacamento.md,
   },
-  detalhes: { flex: 1 },
-  descricao: { fontSize: 16, fontWeight: "600", color: cores.texto },
-  data: { fontSize: 12, color: cores.subtexto, marginTop: 2 },
-  valor: { fontSize: 16, fontWeight: "bold" },
+  info: {
+    flex: 1, // ocupa todo o espaço entre o ícone e o valor
+  },
+  descricao: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: cores.texto,
+  },
+  data: {
+    fontSize: 12,
+    color: cores.subtexto,
+    marginTop: 2,
+  },
+  valor: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginLeft: espacamento.sm,
+  },
 });

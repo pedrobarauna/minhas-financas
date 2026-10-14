@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTransacoes } from "../context/TransacoesContext";
+import { useTransacoes } from "../context/TransacoesContext"; // ← NOVO
 import { cores, espacamento, raio } from "../theme";
 
 const CATEGORIAS = [
@@ -29,14 +29,14 @@ export function NovaTransacaoScreen({ navigation }) {
   const [tipo, setTipo] = useState("despesa");
   const [categoria, setCategoria] = useState("outros");
 
-  const { adicionarTransacao } = useTransacoes();
+  const { adicionarTransacao } = useTransacoes(); // ← NOVO (dentro do componente)
 
+  // ↓ Função salvar atualizada para usar o contexto
   const salvar = async () => {
     if (!descricao.trim()) {
       Alert.alert("Atenção", "Digite uma descrição.");
       return;
     }
-
     const valorNumerico = parseFloat(valor.replace(",", "."));
     if (!valor || isNaN(valorNumerico) || valorNumerico <= 0) {
       Alert.alert("Atenção", "Digite um valor válido.");
@@ -56,6 +56,7 @@ export function NovaTransacaoScreen({ navigation }) {
     setValor("");
     setTipo("despesa");
     setCategoria("outros");
+
     navigation.navigate("Dashboard");
   };
 
@@ -96,6 +97,7 @@ export function NovaTransacaoScreen({ navigation }) {
         onChangeText={setDescricao}
         placeholder="Ex: Supermercado, Salário..."
         maxLength={50}
+        returnKeyType="next"
       />
 
       <Text style={styles.label}>Valor (R$)</Text>
@@ -105,6 +107,7 @@ export function NovaTransacaoScreen({ navigation }) {
         onChangeText={setValor}
         placeholder="0,00"
         keyboardType="decimal-pad"
+        returnKeyType="done"
       />
 
       <Text style={styles.label}>Categoria</Text>
