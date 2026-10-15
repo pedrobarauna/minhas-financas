@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,7 +11,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTransacoes } from "../context/TransacoesContext"; // ← NOVO
+import { SeletorLocalMapa } from "../components/SeletorLocalMapa"; // ← NOVO
+import { useTransacoes } from "../context/TransacoesContext";
+import { useComprovante } from "../hooks/useComprovante"; // ← NOVO
+import { useLocalizacao } from "../hooks/useLocalizacao"; // ← NOVO
 import { cores, espacamento, raio } from "../theme";
 
 const CATEGORIAS = [
@@ -28,10 +32,47 @@ export function NovaTransacaoScreen({ navigation }) {
   const [valor, setValor] = useState("");
   const [tipo, setTipo] = useState("despesa");
   const [categoria, setCategoria] = useState("outros");
+  const [localizacao, setLocalizacao] = useState(null); // ← NOVO
+  const [modalVisivel, setModalVisivel] = useState(false); // ← NOVO
+  const [comprovante, setComprovante] = useState(null); // ← NOVO
 
-  const { adicionarTransacao } = useTransacoes(); // ← NOVO (dentro do componente)
+  const { adicionarTransacao } = useTransacoes();
+  const { obterLocalizacao, obtendo: obtendoLoc } = useLocalizacao(); // ← NOVO
+  const {
+    tirarFoto,
+    escolherDaGaleria,
+    obtendo: obtendoFoto,
+  } = useComprovante(); // ← NOVO
 
-  // ↓ Função salvar atualizada para usar o contexto
+  // ← NOVO: opção 1 — usa o GPS do dispositivo
+  async function capturarGPS() {
+    const coords = await obterLocalizacao();
+    if (coords) setLocalizacao(coords);
+  }
+
+  // ← NOVO: opção 2 — recebe o ponto escolhido pelo SeletorLocalMapa
+  function confirmarPinDoMapa(coords) {
+    setLocalizacao(coords);
+    setModalVisivel(false);
+  }
+
+  // ← NOVO: comprovante — câmera
+  async function capturarComCamera() {
+    const uri = await tirarFoto();
+    if (uri) setComprovante(uri);
+  }
+
+  // ← NOVO: comprovante — galeria
+  async function selecionarDaGaleria() {
+    const uri = await escolherDaGaleria();
+    if (uri) setComprovante(uri);
+  }
+
+  // ← NOVO: remove a foto anexada
+  function removerComprovante() {
+    setComprovante(null);
+  }
+
   const salvar = async () => {
     if (!descricao.trim()) {
       Alert.alert("Atenção", "Digite uma descrição.");
@@ -50,12 +91,17 @@ export function NovaTransacaoScreen({ navigation }) {
       tipo,
       categoria,
       data: new Date().toLocaleDateString("pt-BR"),
+      latitude: localizacao?.latitude ?? null, // ← NOVO
+      longitude: localizacao?.longitude ?? null, // ← NOVO
+      comprovante: comprovante ?? null, // ← NOVO
     });
 
     setDescricao("");
     setValor("");
     setTipo("despesa");
     setCategoria("outros");
+    setLocalizacao(null); // ← NOVO
+    setComprovante(null); // ← NOVO
 
     navigation.navigate("Dashboard");
   };
@@ -138,6 +184,105 @@ export function NovaTransacaoScreen({ navigation }) {
         ))}
       </View>
 
+      {/* ← NOVO: dois botões de localização lado a lado */}
+      <Text style={styles.label}>Localização (opcional)</Text>
+      <View style={styles.botoesAcao}>
+        <TouchableOpacity
+          style={[styles.botaoAcao, localizacao && styles.botaoAcaoAtivo]}
+          onPress={capturarGPS}
+          disabled={obtendoLoc}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="locate"
+            size={18}
+            color={localizacao ? "#fff" : cores.primaria}
+          />
+          <Text style={[styles.textoAcao, localizacao && { color: "#fff" }]}>
+            {obtendoLoc ? "Obtendo..." : "Minha localização"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.botaoAcao, localizacao && styles.botaoAcaoAtivo]}
+          onPress={() => setModalVisivel(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="map"
+            size={18}
+            color={localizacao ? "#fff" : cores.primaria}
+          />
+          <Text style={[styles.textoAcao, localizacao && { color: "#fff" }]}>
+            Escolher no mapa
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {localizacao && (
+        <Text style={styles.infoAuxiliar}>
+          📍 {localizacao.latitude.toFixed(5)},{" "}
+          {localizacao.longitude.toFixed(5)}
+        </Text>
+      )}
+
+      {/* ← NOVO: dois botões de comprovante lado a lado */}
+      <Text style={styles.label}>Comprovante (opcional)</Text>
+      <View style={styles.botoesAcao}>
+        <TouchableOpacity
+          style={[styles.botaoAcao, comprovante && styles.botaoAcaoAtivo]}
+          onPress={capturarComCamera}
+          disabled={obtendoFoto}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="camera"
+            size={18}
+            color={comprovante ? "#fff" : cores.primaria}
+          />
+          <Text style={[styles.textoAcao, comprovante && { color: "#fff" }]}>
+            {obtendoFoto ? "Abrindo..." : "Tirar foto"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.botaoAcao, comprovante && styles.botaoAcaoAtivo]}
+          onPress={selecionarDaGaleria}
+          disabled={obtendoFoto}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="image"
+            size={18}
+            color={comprovante ? "#fff" : cores.primaria}
+          />
+          <Text style={[styles.textoAcao, comprovante && { color: "#fff" }]}>
+            Da galeria
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ← NOVO: preview da foto + botão para remover */}
+      {comprovante && (
+        <View style={styles.previewWrapper}>
+          <Image source={{ uri: comprovante }} style={styles.preview} />
+          <TouchableOpacity
+            style={styles.botaoRemoverFoto}
+            onPress={removerComprovante}
+          >
+            <Ionicons name="close-circle" size={28} color={cores.despesa} />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ← NOVO: modal de seleção de local — funciona no native e no web */}
+      <SeletorLocalMapa
+        visivel={modalVisivel}
+        localizacaoAtual={localizacao}
+        onConfirmar={confirmarPinDoMapa}
+        onCancelar={() => setModalVisivel(false)}
+      />
+
       <TouchableOpacity
         style={styles.botaoSalvar}
         onPress={salvar}
@@ -207,6 +352,54 @@ const styles = StyleSheet.create({
   },
   chipAtivo: { backgroundColor: cores.primaria, borderColor: cores.primaria },
   textoChip: { fontSize: 13, color: cores.subtexto },
+
+  // ← NOVO: botões de ação (localização e comprovante reutilizam o mesmo estilo)
+  botoesAcao: { flexDirection: "row", gap: 10, marginBottom: espacamento.xs },
+  botaoAcao: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    padding: 12,
+    borderRadius: raio.md,
+    borderWidth: 1,
+    borderColor: cores.primaria,
+    backgroundColor: "#fff",
+  },
+  botaoAcaoAtivo: {
+    backgroundColor: cores.primaria,
+    borderColor: cores.primaria,
+  },
+  textoAcao: { fontSize: 13, fontWeight: "600", color: cores.primaria },
+  infoAuxiliar: {
+    fontSize: 12,
+    color: cores.subtexto,
+    marginBottom: espacamento.md,
+  },
+
+  // ← NOVO: preview do comprovante
+  previewWrapper: {
+    alignSelf: "flex-start",
+    marginVertical: espacamento.md,
+    position: "relative",
+  },
+  preview: {
+    width: 120,
+    height: 160,
+    borderRadius: raio.md,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    backgroundColor: "#eee",
+  },
+  botaoRemoverFoto: {
+    position: "absolute",
+    top: -10,
+    right: -10,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+  },
+
   botaoSalvar: {
     flexDirection: "row",
     alignItems: "center",
@@ -216,6 +409,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: raio.md,
     marginBottom: espacamento.xl,
+    marginTop: espacamento.md,
   },
   textoBotao: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

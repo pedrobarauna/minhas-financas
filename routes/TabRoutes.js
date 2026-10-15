@@ -1,7 +1,9 @@
 // routes/TabRoutes.js
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; // ← NOVO
+
+import { MapaScreen } from "../screens/MapaScreen";
 import { NovaTransacaoScreen } from "../screens/NovaTransacaoScreen";
 import { RelatorioScreen } from "../screens/RelatorioScreen";
 import { SobreScreen } from "../screens/SobreScreen";
@@ -13,11 +15,12 @@ const ICONES_TAB = {
   Dashboard: { ativa: "home", inativa: "home-outline" },
   "Nova Transação": { ativa: "add-circle", inativa: "add-circle-outline" },
   Relatório: { ativa: "bar-chart", inativa: "bar-chart-outline" },
+  Mapa: { ativa: "map", inativa: "map-outline" },
   Sobre: { ativa: "information-circle", inativa: "information-circle-outline" },
 };
 
 export function TabRoutes() {
-  const insets = useSafeAreaInsets(); // ← Obtém as margens de segurança do sistema
+  const insets = useSafeAreaInsets(); // ← NOVO: Ler os valores de margem do Android
 
   return (
     <Tab.Navigator
@@ -30,9 +33,9 @@ export function TabRoutes() {
           borderTopColor: "#eee",
           // O paddingBottom agora soma o valor da barra do Android + 8 de margem
           paddingBottom: insets.bottom + 8,
-          paddingTop: 8,
           // A altura acompanha o padding inferior dinâmico
-          height: 60 + insets.bottom,
+          minHeight: 60 + insets.bottom,
+          paddingTop: 8,
         },
         tabBarIcon: ({ focused, color, size }) => {
           const { ativa, inativa } = ICONES_TAB[route.name];
@@ -49,6 +52,7 @@ export function TabRoutes() {
       <Tab.Screen name="Dashboard" component={DashboardStack} />
       <Tab.Screen name="Nova Transação" component={NovaTransacaoScreen} />
       <Tab.Screen name="Relatório" component={RelatorioScreen} />
+      <Tab.Screen name="Mapa" component={MapaScreen} />
       <Tab.Screen name="Sobre" component={SobreScreen} />
     </Tab.Navigator>
   );
