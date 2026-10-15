@@ -1,30 +1,39 @@
 // App.js
 import { NavigationContainer } from "@react-navigation/native";
-import { useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  PrimeiroAcessoProvider,
+  usePrimeiroAcesso,
+} from "./context/PrimeiroAcessoContext";
 import { TransacoesProvider } from "./context/TransacoesContext";
 import { TabRoutes } from "./routes/TabRoutes";
 import { BoasVindasScreen } from "./screens/BoasVindasScreen";
 
-export default function App() {
-  // Mantém a navegação condicional da Aula 4 (tela de boas-vindas no primeiro acesso)
-  const [primeiroAcesso, setPrimeiroAcesso] = useState(true);
+function ConteudoApp() {
+  const { primeiroAcesso, carregando, concluir } = usePrimeiroAcesso();
+
+  // Enquanto lê o AsyncStorage, evita o flash da tela de boas-vindas
+  if (carregando) return null;
 
   if (primeiroAcesso) {
-    return (
-      <SafeAreaProvider>
-        <BoasVindasScreen onConcluir={() => setPrimeiroAcesso(false)} />
-      </SafeAreaProvider>
-    );
+    return <BoasVindasScreen onConcluir={concluir} />;
   }
 
   return (
+    <TransacoesProvider>
+      <NavigationContainer>
+        <TabRoutes />
+      </NavigationContainer>
+    </TransacoesProvider>
+  );
+}
+
+export default function App() {
+  return (
     <SafeAreaProvider>
-      <TransacoesProvider>
-        <NavigationContainer>
-          <TabRoutes />
-        </NavigationContainer>
-      </TransacoesProvider>
+      <PrimeiroAcessoProvider>
+        <ConteudoApp />
+      </PrimeiroAcessoProvider>
     </SafeAreaProvider>
   );
 }

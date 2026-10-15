@@ -1,12 +1,41 @@
 // screens/DetalheTransacaoScreen.js
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTransacoes } from "../context/TransacoesContext";
 import { cores, espacamento, raio } from "../theme";
 
 export function DetalheTransacaoScreen({ route, navigation }) {
-  const { transacao } = route.params;
+  const { transacao } = route.params; // recebe os dados via navigate()
   const isReceita = transacao.tipo === "receita";
+  const { removerTransacao } = useTransacoes();
+
+  function confirmarExclusao() {
+    const mensagem = `Deseja excluir "${transacao.descricao}"?`;
+    const excluir = () => {
+      removerTransacao(transacao.id);
+      navigation.goBack();
+    };
+
+    // No react-native-web, Alert.alert ignora os botões e nunca chama onPress.
+    // Usamos window.confirm para que a confirmação funcione no Expo Web.
+    if (Platform.OS === "web") {
+      if (window.confirm(mensagem)) excluir();
+      return;
+    }
+
+    Alert.alert("Excluir transação", mensagem, [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Excluir", style: "destructive", onPress: excluir },
+    ]);
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -37,6 +66,7 @@ export function DetalheTransacaoScreen({ route, navigation }) {
             color={isReceita ? cores.receita : cores.despesa}
           />
         </View>
+
         <Text style={styles.descricao}>{transacao.descricao}</Text>
         <Text
           style={[
@@ -61,6 +91,16 @@ export function DetalheTransacaoScreen({ route, navigation }) {
             <Text style={styles.dado}>{transacao.data}</Text>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.botaoExcluir}
+          onPress={confirmarExclusao}
+          accessibilityRole="button"
+          accessibilityLabel="Excluir transação"
+        >
+          <Ionicons name="trash-outline" size={20} color={cores.despesa} />
+          <Text style={styles.textoExcluir}>Excluir</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -102,4 +142,18 @@ const styles = StyleSheet.create({
   linha: { flexDirection: "row", justifyContent: "space-between" },
   rotulo: { fontSize: 14, color: cores.subtexto },
   dado: { fontSize: 14, fontWeight: "600", color: cores.texto },
+  botaoExcluir: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    width: "100%",
+    marginTop: espacamento.lg,
+    paddingVertical: espacamento.md,
+    borderRadius: raio.md,
+    borderWidth: 1,
+    borderColor: cores.despesa,
+    backgroundColor: "transparent",
+  },
+  textoExcluir: { fontSize: 16, fontWeight: "600", color: cores.despesa },
 });
